@@ -23,13 +23,13 @@ use crate::vgm::specification::num_argument_bytes;
 pub const GET_LONG_WAIT_LUT: u32 = 0;
 
 pub struct PsgCodec<'a> {
-	output: &'a mut ByteStream, // The codec's output data
-	pending_data: Vec<u8>,      // Data that has been written to the codec but not yet been fully processed
+    output: &'a mut ByteStream, // The codec's output data
+    pending_data: Vec<u8>,      // Data that has been written to the codec but not yet been fully processed
     long_wait_table: Vec<u16>,  // A lookup table for compression of long wait VGM commands
     current_command: u8,
     remaning_argument_bytes: u32,
-	long_wait_duration: u16,
-	flags: u8,
+    long_wait_duration: u16,
+    flags: u8,
     num_flags: u8,
 }
 
@@ -69,7 +69,7 @@ impl<'a> PsgCodec<'a> {
 
 impl<'a> Codec<'a> for PsgCodec<'a> {
     fn new(out: &'a mut ByteStream) -> PsgCodec<'a> {
-	    PsgCodec {
+        PsgCodec {
             output: out,
             pending_data: Vec::new(),
             long_wait_table: Vec::new(),
@@ -78,33 +78,33 @@ impl<'a> Codec<'a> for PsgCodec<'a> {
             long_wait_duration: 0,
             flags: 0,
             num_flags: 0
-        }	    
-	}
+        }
+    }
     
-	fn get_extra_data(&self, what: u32) -> Option<Vec<u8>> {
-		match what {
-			GET_LONG_WAIT_LUT => {
-				let mut table = vec![Command::DATA_BLOCK, 0x66, 0x02, 0x20, 0x00, 0x00, 0x00];
-				table.resize(32 + 7, 0);
-				for (i, wait) in self.long_wait_table.iter().enumerate() {
-					table[7 + i*2] = (wait & 0xFF) as u8;
-					table[7 + i*2 + 1] = (wait >> 8) as u8;
-				}
-				Some(table)
-			}
-			_ => None
-		}
-	}
-	
-	fn output_len(&self) -> usize {
-		self.output.len()
-	}
-	
-	fn passthrough(&mut self, c: u8) {
-	    self.output.write(c);
-	}
-	
-	fn write(&mut self, c: u8) {
+    fn get_extra_data(&self, what: u32) -> Option<Vec<u8>> {
+        match what {
+            GET_LONG_WAIT_LUT => {
+                let mut table = vec![Command::DATA_BLOCK, 0x66, 0x02, 0x20, 0x00, 0x00, 0x00];
+                table.resize(32 + 7, 0);
+                for (i, wait) in self.long_wait_table.iter().enumerate() {
+                    table[7 + i*2] = (wait & 0xFF) as u8;
+                    table[7 + i*2 + 1] = (wait >> 8) as u8;
+                }
+                Some(table)
+            }
+            _ => None
+        }
+    }
+
+    fn output_len(&self) -> usize {
+        self.output.len()
+    }
+
+    fn passthrough(&mut self, c: u8) {
+        self.output.write(c);
+    }
+
+    fn write(&mut self, c: u8) {
         if self.remaning_argument_bytes > 0 {
             self.handle_argument(c);
         } else {
@@ -125,19 +125,19 @@ impl<'a> Codec<'a> for PsgCodec<'a> {
         }
     }
 
-	fn flush(&mut self) {
-		if self.num_flags > 0 {
-			while self.num_flags < 8 {
-				self.pending_data.push(Command::NOP);
-				self.num_flags += 1;
-			}
-			self.output.write(self.flags);
-			self.output.write_n(&self.pending_data);
-			self.pending_data.clear();
-			self.flags = 0;
-			self.num_flags = 0;
-		}	
-	}
+    fn flush(&mut self) {
+        if self.num_flags > 0 {
+            while self.num_flags < 8 {
+                self.pending_data.push(Command::NOP);
+                self.num_flags += 1;
+            }
+            self.output.write(self.flags);
+            self.output.write_n(&self.pending_data);
+            self.pending_data.clear();
+            self.flags = 0;
+            self.num_flags = 0;
+        }
+    }
 }
 
 
@@ -147,7 +147,7 @@ mod tests {
 
     #[test]
     fn test_write_psg() {
-	    let mut bs = ByteStream::new(Vec::new());
+        let mut bs = ByteStream::new(Vec::new());
         let mut codec = PsgCodec::new(&mut bs);
         assert_eq!(codec.flags, 0);
         codec.write(0x50);
@@ -162,7 +162,7 @@ mod tests {
 
     #[test]
     fn test_write_long_wait() {
-	    let mut bs = ByteStream::new(Vec::new());
+        let mut bs = ByteStream::new(Vec::new());
         let mut codec = PsgCodec::new(&mut bs);
         codec.write(0x61);
         assert_eq!(codec.pending_data.len(), 0);
@@ -178,7 +178,7 @@ mod tests {
     
     #[test]
     fn test_implicit_flush() {
-	    let mut bs = ByteStream::new(Vec::new());
+        let mut bs = ByteStream::new(Vec::new());
         let mut codec = PsgCodec::new(&mut bs);
         assert_eq!(codec.flags, 0);
         for n in 0..8 {

@@ -13,26 +13,26 @@ pub struct NullCodec<'a> {
 
 impl<'a> Codec<'a> for NullCodec<'a> {
     fn new(out: &'a mut ByteStream) -> NullCodec<'a> {
-	    NullCodec { output: out }	    
-	}
+        NullCodec { output: out }
+    }
     
-	fn output_len(&self) -> usize {
-		self.output.len()
-	}
-	
-	fn passthrough(&mut self, c: u8) {
-	    self.output.write(c);
-	}
-	
-	fn write(&mut self, c: u8) {
-	    self.passthrough(c);
-	}
-	
-	fn flush(&mut self) {
-	}
+    fn output_len(&self) -> usize {
+        self.output.len()
+    }
+
+    fn passthrough(&mut self, c: u8) {
+        self.output.write(c);
+    }
+
+    fn write(&mut self, c: u8) {
+        self.passthrough(c);
+    }
+
+    fn flush(&mut self) {
+    }
 
     fn get_extra_data(&self, what: u32) -> Option<Vec<u8>> {
-		None
-	}		
+        None
+    }
 }
 

@@ -22,14 +22,14 @@ pub fn read_vgm_file(input_path: &Path, out_data: &mut Vec<u8>, assume_vgz: bool
         let mut file = File::open(input_path)?;
         file.read_to_end(out_data)?;
     } else {
-		print!("Deflating..");
-		let mut gz_data = Vec::new();
+        print!("Deflating..");
+        let mut gz_data = Vec::new();
         let mut file = File::open(input_path)?;
         file.read_to_end(&mut gz_data)?;
-		let mut gz_slice = gz_data.as_slice();
-		let mut gz_decoder = GzDecoder::new(&mut gz_slice);
-		gz_decoder.read_to_end(out_data)?;
-		println!(" done ({} -> {} bytes).", gz_data.len(), out_data.len() - prev_size);
+        let mut gz_slice = gz_data.as_slice();
+        let mut gz_decoder = GzDecoder::new(&mut gz_slice);
+        gz_decoder.read_to_end(out_data)?;
+        println!(" done ({} -> {} bytes).", gz_data.len(), out_data.len() - prev_size);
     }
     
     Ok(out_data.len() - prev_size)
@@ -43,10 +43,10 @@ fn detect_compression(input_path: &Path) -> Result<bool, std::io::Error> {
         let mut file = File::open(input_path)?;
         let mut magic = vec![0u8; 4];
         file.read_exact(&mut magic)?;
-		match String::from_utf8(magic) {
-		    Ok(s) => s != specification::VGM_MAGIC,
-            Err(e) => true,			
-		}
+        match String::from_utf8(magic) {
+            Ok(s) => s != specification::VGM_MAGIC,
+            Err(e) => true,	
+        }
     };
     Ok(is_vgz)
 }
