@@ -1,0 +1,9 @@
+[package]
+name = "vgm2spc"
+version = "0.1.0"
+authors = ["mic- <micol972@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+bitflags = "1.0.5"
+flate2 = "1.0.7"
