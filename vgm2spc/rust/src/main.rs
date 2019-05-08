@@ -52,8 +52,8 @@ fn main() {
     }    
  
     flags |= ConverterFlags::PSG_CODEC;
-	
+
     let mut converter = converter::Converter::new();
     converter.convert(Path::new(&input_path), Path::new(&output_path), flags).expect("Failed");
-	println!("Done");
+    println!("Done");
 }
