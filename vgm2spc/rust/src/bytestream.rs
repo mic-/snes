@@ -31,6 +31,7 @@ impl ByteStream {
         self.data[self.pos]
     }
 
+    /// Return the (little-endian) u32 at `pos_offset`. The offset is relative to the current position.
     pub fn peek_u32_at(&self, pos_offset: usize) -> u32 {
         (self.data[self.pos + pos_offset] as u32) |
         (self.data[self.pos + pos_offset + 1] as u32) << 8 |
@@ -38,12 +39,12 @@ impl ByteStream {
         (self.data[self.pos + pos_offset + 3] as u32) << 24        
     }
 
-    /// Replace the byte at `pos_offset` with `val`- The offset is relative to the current position.
+    /// Replace the byte at `pos_offset` with `val`. The offset is relative to the current position.
     pub fn replace_at(&mut self, pos_offset: usize, val: u8) {
         self.data[self.pos + pos_offset] = val;
     }
     
-    /// Replace the u32 at `pos_offset` with `val`- The offset is relative to the current position.
+    /// Replace the (little-endian) u32 at `pos_offset` with `val`. The offset is relative to the current position.
     pub fn replace_u32_at(&mut self, pos_offset: usize, val: u32) {
         self.data[self.pos + pos_offset] = (val & 0xFF) as u8;
         self.data[self.pos + pos_offset + 1] = (val >> 8) as u8;
@@ -77,12 +78,8 @@ impl ByteStream {
         v
     }
 
-     pub fn borrow_n(&mut self, n: usize) -> &[u8] {
-        let r = &self.data[self.pos..self.pos+n];
-        self.pos += n;
-        r
-    }
-
+    /// Advance the position by `n` bytes. No consideration is made as to whether
+    /// the new position is within the bounds of the stream.
     pub fn skip(&mut self, n: usize) {
         self.pos += n;
     }

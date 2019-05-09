@@ -49,29 +49,28 @@ impl Converter {
             Error::new(ErrorKind::UnexpectedEof, "The file did not contain sufficient data");
         }
         let vgm_header: specification::FileHeader = unsafe { std::ptr::read(input_data.as_ptr() as *const _) };
-        let mut data_offset = if vgm_header.version >= 0x00000150 {
+        let data_offset = if vgm_header.version >= 0x00000150 {
             std::cmp::max(vgm_header.vgm_data_offset, 0x40)
         } else {
             0x40
         };
         
-        input_data[8] = 0x52;    // To identify the VGM as compressed
-
         let mut input_stream = ByteStream::new(input_data);
         let input_size = input_stream.len();
                 
         println!("Converting {}", input_path.file_name().unwrap().to_str().unwrap());
         
-        let mut extradata_offset = data_offset;
+        let extradata_offset = data_offset;
         let mut extradata_block: Vec<u8> = Vec::new();
-		
+
         self.loop_offset = (vgm_header.loop_offset + 0x1C) as usize;
               
         input_stream = self.preprocess(&mut input_stream, data_offset as usize, &vgm_header);
         let mut output_stream = ByteStream::new(input_stream.read_n(data_offset as usize));
-		
+        output_stream.replace_at(8, 0x52);    // To identify the VGM as compressed
+
         let mut new_loop_offset = self.loop_offset;
-		
+
         {
             // Now do the encoding stage
             let mut codec: Box<dyn Codec> = match self.codec_used {
@@ -144,7 +143,6 @@ impl Converter {
             gd3_offset -= input_size - (output_stream.len() + extradata_block.len());
             output_stream.replace_u32_at(0x14, gd3_offset as u32);
 
-            // Read song title, game title and author from the GD3 header, ignoring the high-order byte of each character
             output_stream.skip(gd3_offset + 0x14 + 0x0C - extradata_block.len());
             let mut dummy = String::from("");
             Self::read_gd3_string(&mut output_stream, &mut self.song_title);
@@ -179,52 +177,52 @@ impl Converter {
         let mut output_file = File::create(output_path)?;
         let mut spc_ram_remain = 0x10000;
         if !flags.contains(ConverterFlags::RAW_OUTPUT) {
-            output_file.write_all("SNES-SPC700 Sound File Data v0.30".as_bytes());
-            output_file.write_all(&[26, 26, 26, 30]);
+            output_file.write_all("SNES-SPC700 Sound File Data v0.30".as_bytes())?;
+            output_file.write_all(&[26, 26, 26, 30])?;
 
-			// SPC registers:           PC       A     X     Y     PSW   SP     reserved
-			output_file.write_all(&[0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-			// Write ID666 tag
-            output_file.write_all(&Self::as_id666_buffer(self.song_title.as_bytes(), 32));
-            output_file.write_all(&Self::as_id666_buffer(self.game_title.as_bytes(), 32));
-            output_file.write_all(&Self::as_id666_buffer("Unknown".as_bytes(), 16));
-            output_file.write_all(&Self::as_id666_buffer("Created with VGM2SPC".as_bytes(), 32));
-            output_file.write_all(&Self::as_id666_buffer("01/01/1990".as_bytes(), 11));
+            // SPC registers:           PC       A     X     Y     PSW   SP     reserved
+            output_file.write_all(&[0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])?;
+            // Write ID666 tag
+            output_file.write_all(&Self::as_id666_buffer(self.song_title.as_bytes(), 32))?;
+            output_file.write_all(&Self::as_id666_buffer(self.game_title.as_bytes(), 32))?;
+            output_file.write_all(&Self::as_id666_buffer("Unknown".as_bytes(), 16))?;
+            output_file.write_all(&Self::as_id666_buffer("Created with VGM2SPC".as_bytes(), 32))?;
+            output_file.write_all(&Self::as_id666_buffer("01/01/1990".as_bytes(), 11))?;
 
             // Fade start/length (none)
-            output_file.write_all(&vec![0; 8]);
+            output_file.write_all(&vec![0; 8])?;
 
-            output_file.write_all(&Self::as_id666_buffer(self.artist.as_bytes(), 32));
+            output_file.write_all(&Self::as_id666_buffer(self.artist.as_bytes(), 32))?;
         
             // Channel disable (none), emulator used for dumping (unknown)
-            output_file.write_all(&vec![0, 0]);
+            output_file.write_all(&vec![0, 0])?;
             // Reserved
-            output_file.write_all(&vec![0; 45]);
+            output_file.write_all(&vec![0; 45])?;
 
-            if player.len() >= 0xF0 { player[0xF0] = 0x0A; }	// SPC_TEST = 0x0A (enable timers, enable spc700)
+            if player.len() >= 0xF0 { player[0xF0] = 0x0A; }    // SPC_TEST = 0x0A (enable timers, enable spc700)
             let player_bytes_used = std::cmp::min(player.len(), spc_ram_remain);
-            output_file.write_all(&player[..player_bytes_used]);
+            output_file.write_all(&player[..player_bytes_used])?;
             spc_ram_remain -= player_bytes_used;
         }
 
         output_stream.reset();
-        output_file.write_all(&output_stream.read_n(extradata_offset as usize));
-        output_file.write_all(&extradata_block);
-        output_file.write_all(&output_stream.read_available());
-        spc_ram_remain -= (output_stream.len() + extradata_block.len());
+        output_file.write_all(&output_stream.read_n(extradata_offset as usize))?;
+        output_file.write_all(&extradata_block)?;
+        output_file.write_all(&output_stream.read_available())?;
+        spc_ram_remain -= output_stream.len() + extradata_block.len();
 
         if !flags.contains(ConverterFlags::RAW_OUTPUT) {
             // Pad SPC RAM block
             if spc_ram_remain > 0 {
-                output_file.write_all(&vec![0; spc_ram_remain]);
+                output_file.write_all(&vec![0; spc_ram_remain])?;
             }
 
             let mut dsp_regs: Vec<u8> = vec![0; 128];
             dsp_regs[0x6C] = 0x20;  // FLG = 0x20 (disable echo buffer writes);
-            output_file.write_all(&dsp_regs[..]);
+            output_file.write_all(&dsp_regs[..])?;
             // Re-use as padding
             dsp_regs[0x6C] = 0;
-            output_file.write_all(&dsp_regs[..]);
+            output_file.write_all(&dsp_regs[..])?;
         }
 
         Ok(0)
@@ -237,6 +235,7 @@ impl Converter {
         Ok(player)
     }
 
+    /// Return a vector of length `target_len` consisting of the data from `bytes`, plus as many padding zero-bytes as necessary
     fn as_id666_buffer(bytes: &[u8], target_len: usize) -> Vec<u8> {
         let mut result: Vec<u8> = Vec::new();
         let bytes_used = std::cmp::min(bytes.len(), target_len);
@@ -245,8 +244,9 @@ impl Converter {
         result
     }
 
+    /// Read a GD3 tag string from the given stream, ignoring the high-order byte of each character
     fn read_gd3_string(bs: &mut ByteStream, str: &mut String) {
-        for i in 0..32 {
+        for _ in 0..32 {
             if bs.available() == 0 { break; }
             let b = bs.peek();
             if b == 0 { break; }

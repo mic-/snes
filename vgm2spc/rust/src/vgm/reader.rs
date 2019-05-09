@@ -45,7 +45,7 @@ fn detect_compression(input_path: &Path) -> Result<bool, std::io::Error> {
         file.read_exact(&mut magic)?;
         match String::from_utf8(magic) {
             Ok(s) => s != specification::VGM_MAGIC,
-            Err(e) => true,	
+            Err(_) => true,
         }
     };
     Ok(is_vgz)

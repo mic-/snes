@@ -1,4 +1,3 @@
-use std::any::Any;
 use crate::bytestream::ByteStream;
 
 pub trait Codec<'a> {

@@ -2,7 +2,6 @@
 /// A dummy codec that outputs the input data as-is.
 ///
  
-use std::any::Any;
 use std::vec::Vec;
 use crate::codec::Codec;
 use crate::bytestream::ByteStream;
@@ -31,7 +30,7 @@ impl<'a> Codec<'a> for NullCodec<'a> {
     fn flush(&mut self) {
     }
 
-    fn get_extra_data(&self, what: u32) -> Option<Vec<u8>> {
+    fn get_extra_data(&self, _what: u32) -> Option<Vec<u8>> {
         None
     }
 }
