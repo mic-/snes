@@ -291,12 +291,6 @@ impl Converter {
                         preprocessed_data.write(input_stream.read());
                     }
                 }
-
-                Command::YM2612_HI_WRITE | Command::YM2413_WRITE | Command::YM2151_WRITE | Command::WAIT_LONG => {
-                    preprocessed_data.write(c);
-                    preprocessed_data.write(input_stream.read());
-                    preprocessed_data.write(input_stream.read());
-                }
                 
                 Command::END_OF_SOUND_DATA => {
                     preprocessed_data.write(c);
@@ -336,7 +330,8 @@ impl Converter {
                             let last_index = preprocessed_data.len() - 1;
                             preprocessed_data.reset();
                             preprocessed_data.skip(last_index);
-                            preprocessed_data.write(0x80 | wait);
+                            preprocessed_data.replace_at(0, 0x80 | wait);
+                            preprocessed_data.skip(1);
                         } else {
                             preprocessed_data.write(0x80 | wait);
                         }
@@ -358,6 +353,9 @@ impl Converter {
 
                 _ => {
                     preprocessed_data.write(c);
+                    for _ in 0..specification::num_argument_bytes(c) {
+                        preprocessed_data.write(input_stream.read());
+                    }
                 }
             }
         }
